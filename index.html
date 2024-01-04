@@ -1,1 +1,120 @@
 
+//出勤ボタンクリック時
+  async function Commuting_OnButtonClick(){
+    
+    //日付、ログインのユーザーの名前からタイムカードデータを取得
+    var strNowDate = luxon.DateTime.local().toFormat('yyyy-MM-dd');
+    var strNowTime = luxon.DateTime.local().toFormat('HH:mm');
+    var intAppID = 0;
+    
+    if(location.href.match(/\/m\//g)){
+                     intAppID = kintone.mobile.app.getId();
+    }else{
+                     intAppID = kintone.app.getId();
+    }
+
+    //更新対象のタイムカードを取得
+    var TimeCardBody = {
+      'app': intAppID,
+      'query': '申請者 in (LOGINUSER()) and 日付 = "' + strNowDate +'"', 
+      'fields': ['レコード番号']
+    };
+    
+    var resp2 = await kintone.api(kintone.api.url('/k/v1/records', true), 'GET', TimeCardBody);
+    console.log(resp2);
+    
+    //レコードの有無での分岐
+    if(resp2.records.length !== 0){
+     return Swa1.fire('既に出勤しています。<br><a href="' + location.origin + location.pathname + '/show#record=' + resp2.records[0]['レコード番号']);
+    }else{
+      //データ無し ＝ 登録
+    
+      //データ登録登録用の変数を整形
+      var insertRecord = {};
+      insertRecord['日付'] = {type: "DATE", value: strNowDate};
+      insertRecord['出勤時刻'] = {type: "TIME", value: strNowTime};
+     
+      var PostBody = {
+       'app': intAppID,
+       'record':insertRecord
+      };
+     
+     var resp4 = await kintone.api(kintone.api.url('/k/v1/records', true),'POST', PostBody);
+     console.log(resp4);
+     
+      return Sawl.fire('おはようございます。<br><a href="' + location.origin + location.pathname + '/show#record=' + resp4['id'] + '"出勤タイムカード');
+      
+      
+    }
+     　
+  
+  }
+    
+    
+  //退勤ボタンクリック時
+  async function Leaving_OnaButtonClick(){
+   
+    //日付、ログインのユーザーの名前からタイムカードデータを取得
+    var strNowDate = luxon.DateTime.local().toFormat('yyyy-MM-dd');
+    var strNowTime = luxon.DateTime.local().toFormat('HH:mm');
+    var intAppID = 0;
+     
+        if(location.href.match(/\/m\//g)){
+                        intAppID = kintone.mobile.kintone.app.getId();
+        }else{
+                        intAppID = kintone.kintone.getId();
+        }
+   
+    //更新対象のタイムカードを取得
+    var TimeCardBody = {
+      'app': intAppID,
+      'query': '申請者 in (LOGINUSER()) and 日付 = "' + strNowDate +'"', 
+      'fields': ['レコード番号','退勤時刻']
+    };
+    var resp2 = await kintone.api(kintone.api.url('/k/v1/records', true), 'GET', TimeCardBody);
+    console.log(resp2);
+    
+ 　  
+    if(resp2.records.length !== 0){
+     
+      //退勤済みの場合は、エラーとする
+      if(resp2.records[0].退勤時刻.value !== null){
+        Swal.fire('退勤打刻に失敗しまいた。<br>退勤時刻が登録されています。 <br><br>※退勤時刻を修正する場合は<br>手入力でタイムカードを修正してください')；
+      }else{
+        //レコード更新
+        var PutBody = {
+          'app': intAppID,
+          'id': resp2.records[0]['レコード番号'].value,
+          'records': {
+            '退勤時刻': {'value': strNowTime}
+          }
+        };
+        var resp3 = await kintone.api(kintone.api.url('/k/v1/record', true), 'PUT', PutBody);
+        console.log(resp3);
+        
+        Swal.fire('お疲れ様でした。<br><a href="' + location.origin + location.pathname + 'show#record=' + resp2.records[0]['レコード番号'].value + '">タイムカード')；
+        
+      }
+      
+    }else{
+      Swal.fire('退勤打刻に失敗しました。<br>出勤データを確認してください<br><br>※日付が変わった場合は手入力でタイムカードを修正してください')
+    }
+    
+    
+  }
+  
+    
+    
+ (function() {
+   'use strict';
+   
+   
+   
+   
+   
+ })();
+    
+    
+    
+    
+    
